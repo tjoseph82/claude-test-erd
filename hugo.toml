@@ -1,0 +1,14 @@
+baseURL       = "https://tjoseph82.github.io/claude-test-erd/"
+languageCode  = "en-us"
+title         = "Emergency Response Dashboard FY 26 | IRC"
+
+# Disable default Hugo features we don't need
+disableKinds  = ["taxonomy", "term", "section", "RSS", "sitemap", "robotsTXT", "404"]
+
+[build]
+  # Don't minify — we want readable output for debugging
+  [build.processing]
+    [build.processing.css]
+      minify = false
+    [build.processing.js]
+      minify = false
