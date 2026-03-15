@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ .Site.Title }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ "css/dashboard.css" | relURL }}">
+</head>
+<body>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Loading dashboard data...</div>
+  <div class="loading-error" id="loading-error"></div>
+</div>
+
+<nav class="nav">
+  <a href="#" class="nav-brand">
+    <div class="nav-logo">IRC</div>
+    <div>
+      <div class="nav-title">Emergency Response Dashboard</div>
+      <div class="nav-subtitle">Emergency Unit Digital Tools</div>
+    </div>
+  </a>
+  <div class="nav-right">
+    <span class="nav-badge">FY 2026</span>
+    <span class="nav-updated" id="nav-updated">Last Updated: &mdash;</span>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-content">
+    <h1>Emergency Response Dashboard <span>FY 26</span></h1>
+    <p>Consolidated emergency response data &mdash; classified emergencies, response progress, and performance against standards for the severest emergencies.</p>
+  </div>
+</div>
+
+<div class="container">
+  <div class="tabs">
+    <button class="tab active" data-tab="overview">Overview</button>
+    <button class="tab" data-tab="performance">SAP Performance</button>
+  </div>
+
+  <div class="tab-panel active" id="tab-overview">
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title"><span class="dot"></span> Average Response Speed (Orange/Red)</div>
+      </div>
+      <div class="speed-grid">
+        <div class="speed-card"><div class="speed-val" id="avg-decision">&mdash;</div><div class="speed-label">Days to Decision<br>to Respond</div></div>
+        <div class="speed-card"><div class="speed-val" id="avg-msna">&mdash;</div><div class="speed-label">Days to MSNA<br>Completion</div></div>
+        <div class="speed-card"><div class="speed-val" id="avg-plansub">&mdash;</div><div class="speed-label">Days to Response Plan<br>Submission</div></div>
+        <div class="speed-card"><div class="speed-val" id="avg-planapproval">&mdash;</div><div class="speed-label">Days to Response Plan<br>Approval</div></div>
+        <div class="speed-card"><div class="speed-val" id="avg-client">&mdash;</div><div class="speed-label">Days to First<br>Client Served</div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title"><span class="dot"></span> Emergency Interventions Implemented</div>
+      </div>
+      <div class="eo-grid" id="eo-grid"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title"><span class="dot"></span> Active Orange &amp; Red Emergencies</div>
+      </div>
+      <div class="table-wrap" style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Classification</th>
+              <th>Date of First Orange/Red</th>
+              <th>Emergency Details</th>
+              <th class="text-right">Number Affected</th>
+              <th class="text-right">% Affected Reached</th>
+              <th class="text-right">Response Budget</th>
+              <th class="text-right">Gap in Funding</th>
+              <th class="text-right" style="color:var(--red)">Days for Decision to Respond</th>
+              <th class="text-right" style="color:var(--red)">Days to MSNA Completion</th>
+              <th class="text-right" style="color:var(--red)">Days to Response Plan Submission</th>
+              <th class="text-right" style="color:var(--red)">Days to Response Plan Approval</th>
+              <th class="text-right" style="color:var(--red)">Days to First Client Served</th>
+            </tr>
+          </thead>
+          <tbody id="main-table"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-performance">
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title"><span class="dot"></span> SAP Reporting Criteria &mdash; FY26 Orange/Red Responses</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Classification</th>
+              <th>Stance</th>
+              <th>Response Plan Justification</th>
+              <th>Learning Exercise</th>
+              <th>Feedback Mechanism</th>
+              <th>Feedback Timeframe</th>
+              <th>Safeguarding 80%</th>
+              <th>Partners Learning 50%</th>
+            </tr>
+          </thead>
+          <tbody id="sap-table"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL SLIDE-OVER PANEL -->
+<div class="detail-overlay" id="detail-overlay">
+  <div class="detail-panel">
+    <div class="detail-header">
+      <button class="close-btn" onclick="closeDetail()">&times;</button>
+      <h2 id="detail-title"></h2>
+      <p id="detail-subtitle"></p>
+    </div>
+    <div class="detail-body" id="detail-body"></div>
+  </div>
+</div>
+
+<script src="{{ "js/dashboard.js" | relURL }}"></script>
+</body>
+</html>
