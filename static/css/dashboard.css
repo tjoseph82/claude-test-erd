@@ -84,7 +84,14 @@ body { font-family: var(--font); background: var(--g100); color: var(--g900); li
 .table-wrap { background: var(--white); border-radius: var(--r-lg); box-shadow: var(--s2); overflow: hidden; border: 1px solid var(--g200); }
 table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 thead { background: var(--g50); }
-th { text-align: left; padding: 9px 12px; font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--g600); border-bottom: 2px solid var(--yellow); }
+th { text-align: left; padding: 9px 12px; font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--black); border-bottom: 2px solid var(--yellow); }
+
+/* ── SORTABLE HEADERS ── */
+th.sortable { cursor: pointer; user-select: none; position: relative; padding-right: 20px; transition: background .15s; }
+th.sortable:hover { background: var(--g100); }
+th.sortable::after { content: '\2195'; position: absolute; right: 6px; top: 50%; transform: translateY(-50%); font-size: 10px; color: var(--g400); }
+th.sortable.sort-asc::after { content: '\2191'; color: var(--yellow-dark); }
+th.sortable.sort-desc::after { content: '\2193'; color: var(--yellow-dark); }
 td { padding: 9px 12px; border-bottom: 1px solid var(--g100); vertical-align: top; color: var(--g800); }
 tbody tr { cursor: pointer; transition: background .1s; }
 tbody tr:hover { background: var(--yellow-light); }
