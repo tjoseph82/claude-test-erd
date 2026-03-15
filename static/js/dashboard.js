@@ -9,7 +9,6 @@
 //  CONFIGURATION — UPDATE THESE AFTER SETUP
 // ─────────────────────────────────────────────
 const DATA_CONFIG = {
-  // Replace with your actual GitHub username and repo name for Repo 1
   owner: "tjoseph82",
   repo:  "claude-test-erd-data",
   branch: "main",
@@ -47,6 +46,76 @@ function statusBadge(v) {
 var ED = [];
 var AVGS = {};
 
+// ─── SORTING STATE ───
+var SORT_COL = null;   // column index
+var SORT_ASC = true;
+
+// Sortable column definitions: index → { field, type }
+var SORTABLE_COLS = {
+  1:  { field: "dateClassified",   type: "date" },
+  3:  { field: "affected",         type: "number" },
+  4:  { field: "reached",          type: "number" },
+  5:  { field: "budget",           type: "number" },
+  6:  { field: "gap",              type: "number" },
+  7:  { field: "daysDecision",     type: "number" },
+  8:  { field: "daysMSNA",         type: "number" },
+  9:  { field: "daysPlanSub",      type: "number" },
+  10: { field: "daysPlanApproval", type: "number" },
+  11: { field: "daysClient",       type: "number" }
+};
+
+function parseSortDate(s) {
+  if (!s) return 0;
+  var d = new Date(s);
+  return isNaN(d.getTime()) ? 0 : d.getTime();
+}
+
+function sortData(data, colIndex, ascending) {
+  var col = SORTABLE_COLS[colIndex];
+  if (!col) return data;
+  var sorted = data.slice(); // copy
+  sorted.sort(function(a, b) {
+    var va = a[col.field];
+    var vb = b[col.field];
+    if (col.type === "date") {
+      va = parseSortDate(va);
+      vb = parseSortDate(vb);
+    } else {
+      va = va == null ? -Infinity : va;
+      vb = vb == null ? -Infinity : vb;
+    }
+    if (va < vb) return ascending ? -1 : 1;
+    if (va > vb) return ascending ? 1 : -1;
+    return 0;
+  });
+  return sorted;
+}
+
+function initSorting() {
+  var headers = document.querySelectorAll("#main-table-head th");
+  headers.forEach(function(th, idx) {
+    if (SORTABLE_COLS[idx]) {
+      th.classList.add("sortable");
+      th.addEventListener("click", function() {
+        if (SORT_COL === idx) {
+          SORT_ASC = !SORT_ASC;
+        } else {
+          SORT_COL = idx;
+          SORT_ASC = true;
+        }
+        // Update header indicators
+        headers.forEach(function(h) {
+          h.classList.remove("sort-asc", "sort-desc");
+        });
+        th.classList.add(SORT_ASC ? "sort-asc" : "sort-desc");
+        // Sort and re-render
+        var sorted = sortData(ED, SORT_COL, SORT_ASC);
+        renderMainTable(sorted, AVGS);
+      });
+    }
+  });
+}
+
 // ─── DATA LOADING ───
 async function loadData() {
   var overlay = document.getElementById("loading-overlay");
@@ -73,6 +142,7 @@ async function loadData() {
     renderMainTable(ED, AVGS);
     renderSapTable(ED);
     initTabs();
+    initSorting();
 
     overlay.classList.add("hidden");
     setTimeout(function() { overlay.style.display = "none"; }, 500);
@@ -105,8 +175,13 @@ function renderSpeedCards(avgs) {
 }
 
 function renderEoChips(eoCounts) {
+  var container = document.getElementById("eo-grid");
   var sorted = Object.entries(eoCounts).sort(function(a, b) { return b[1] - a[1]; });
-  document.getElementById("eo-grid").innerHTML = sorted.map(function(pair) {
+  if (sorted.length === 0) {
+    container.innerHTML = '<div class="empty-state">No emergency intervention data available yet.</div>';
+    return;
+  }
+  container.innerHTML = sorted.map(function(pair) {
     return '<div class="eo-chip"><span>' + pair[0] + '</span><span class="count">' + pair[1] + "</span></div>";
   }).join("");
 }
@@ -116,9 +191,17 @@ function renderMainTable(emergencies, avgs) {
     var sc = e.stance === "Red" ? "background:var(--red);color:#fff"
            : e.stance === "Orange" ? "background:var(--orange);color:#fff" : "";
 
+    // Conditional formatting: red text if value exceeds the average
     function cf(n, avg) {
       if (n == null) return "";
-      var s = n > avg ? "color:var(--red);font-weight:600" : "color:var(--black)";
+      var s = n > avg ? "color:var(--red);font-weight:600" : "";
+      return '<span style="' + s + '">' + n + "</span>";
+    }
+
+    // Special conditional formatting for days to first client: red if > 30
+    function cfClient(n) {
+      if (n == null) return "";
+      var s = n > 30 ? "color:var(--red);font-weight:600" : "";
       return '<span style="' + s + '">' + n + "</span>";
     }
 
@@ -134,7 +217,7 @@ function renderMainTable(emergencies, avgs) {
       + '<td class="text-right text-mono">' + cf(e.daysMSNA, avgs.msna) + "</td>"
       + '<td class="text-right text-mono">' + cf(e.daysPlanSub, avgs.planSub) + "</td>"
       + '<td class="text-right text-mono">' + cf(e.daysPlanApproval, avgs.planApproval) + "</td>"
-      + '<td class="text-right text-mono">' + cf(e.daysClient, 30) + "</td>"
+      + '<td class="text-right text-mono">' + cfClient(e.daysClient) + "</td>"
       + "</tr>";
   }).join("");
 }
@@ -234,7 +317,7 @@ function openDetail(id) {
   h += '<div class="program-section"><h3><span class="dot"></span> Program Data</h3>';
 
   // Reach by Month
-  if (e.rbm.length > 0) {
+  if (e.rbm && e.rbm.length > 0) {
     var mx = Math.max.apply(null, e.rbm.map(function(r) { return (r.i || 0) + (r.p || 0); }));
     h += '<div class="sub-section"><h4>Emergency Offering Reach by Month</h4>'
       + '<div class="legend-inline"><span><span class="ldot" style="background:var(--black)"></span> IRC</span><span><span class="ldot" style="background:var(--g500)"></span> Partner</span></div>';
@@ -248,10 +331,12 @@ function openDetail(id) {
       h += '</div><div class="bar-total">' + (tot / 1000).toFixed(1) + "K</div></div>";
     });
     h += "</div>";
+  } else {
+    h += '<div class="sub-section"><h4>Emergency Offering Reach by Month</h4><div class="empty-state">No monthly reach data recorded yet.</div></div>';
   }
 
   // Cumulative Reach by Offering
-  if (e.rbo.length > 0) {
+  if (e.rbo && e.rbo.length > 0) {
     var mx2 = Math.max.apply(null, e.rbo.map(function(r) { return Math.max(r.r || 0, r.t || 0); }));
     var fK = function(n) { return n == null ? "\u2014" : n >= 1000 ? (n / 1000).toFixed(0) + "K" : n.toString(); };
     h += '<div class="sub-section"><h4>Cumulative Reach by Emergency Offering</h4>'
@@ -266,19 +351,23 @@ function openDetail(id) {
         + '</div><div class="grouped-bar-label">' + r.n + "</div></div>";
     });
     h += "</div></div>";
+  } else {
+    h += '<div class="sub-section"><h4>Cumulative Reach by Emergency Offering</h4><div class="empty-state">No offering reach data recorded yet.</div></div>';
   }
 
   // First Service
-  if (e.fs.length > 0) {
-    h += '<div class="sub-section"><h4>Date of First Service by Emergency Offering</h4><table class="dtable"><thead><tr><th>Emergency Intervention Name</th><th>Date of First Service</th><th>First Service Type</th></tr></thead><tbody>';
+  if (e.fs && e.fs.length > 0) {
+    h += '<div class="sub-section"><h4>Date of First Service by Emergency Offering</h4><table class="dtable"><thead><tr><th>Emergency Intervention Name</th><th>Date of First Service</th></tr></thead><tbody>';
     e.fs.forEach(function(f) {
-      h += "<tr><td>" + f.o + '</td><td class="text-mono">' + f.d + "</td><td>\u2014</td></tr>";
+      h += "<tr><td>" + f.o + '</td><td class="text-mono">' + f.d + "</td></tr>";
     });
     h += "</tbody></table></div>";
+  } else {
+    h += '<div class="sub-section"><h4>Date of First Service by Emergency Offering</h4><div class="empty-state">No first service data recorded yet.</div></div>';
   }
 
   // Partner Data
-  if (e.pd.length > 0) {
+  if (e.pd && e.pd.length > 0) {
     h += '<div class="sub-section"><h4>Partner Data</h4><table class="dtable"><thead><tr><th>Partner</th><th>Offering Implemented</th><th>Existing/New</th><th>First Disbursement</th><th>First Service</th><th>Funding Delivery</th></tr></thead><tbody>';
     e.pd.forEach(function(p) {
       h += "<tr><td>" + p.partner + "</td><td>" + p.offering + "</td><td>" + p.en
@@ -292,7 +381,7 @@ function openDetail(id) {
   }
 
   // Quality Indicators
-  if (e.qi.length > 0) {
+  if (e.qi && e.qi.length > 0) {
     h += '<div class="sub-section"><h4>Quality Indicator Performance</h4><table class="dtable"><thead><tr><th>Emergency Offering</th><th class="text-right">Reported Value</th><th class="text-right">Target</th><th>Date Entered</th></tr></thead><tbody>';
     e.qi.forEach(function(i) {
       h += "<tr><td>" + i.o + '</td><td class="text-right text-mono">' + i.v
@@ -305,12 +394,14 @@ function openDetail(id) {
   }
 
   // Offering Review
-  if (e.or.length > 0) {
+  if (e.or && e.or.length > 0) {
     h += '<div class="sub-section"><h4>Emergency Offering Review</h4><table class="dtable"><thead><tr><th>Implemented Emergency Offering</th><th>Quality Review</th><th>Date Assessed</th></tr></thead><tbody>';
     e.or.forEach(function(r) {
       h += "<tr><td>" + r.o + "</td><td>" + statusBadge(r.q) + '</td><td class="text-mono">' + (r.d || "\u2014") + "</td></tr>";
     });
     h += "</tbody></table></div>";
+  } else {
+    h += '<div class="sub-section"><h4>Emergency Offering Review</h4><div class="empty-state">No offering review data recorded yet.</div></div>';
   }
 
   h += "</div>"; // close program-section
